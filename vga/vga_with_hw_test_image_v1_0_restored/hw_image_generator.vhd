@@ -28,10 +28,15 @@ USE ieee.math_real.all;
 
 ENTITY hw_image_generator IS
 	GENERIC(
+
+		--Downloaded code
 		pixels_y :	INTEGER := 478;    --row that first color will persist until
 		pixels_x	:	INTEGER := 600;   --column that first color will persist until
 		h_pixels	:	STD_LOGIC_VECTOR(10 downto 0) := "10100000000";		--horiztonal display width in pixels (1280)
 		v_pixels	:	STD_LOGIC_VECTOR(10 downto 0) := "10000000000";		--vertical display width in rows (1024)
+		--
+
+
 		ship_speed	:INTEGER :=10;	--speed of the ship
 		bul_speed	:INTEGER :=30;	--speed of the bullet
 		ast_speed	:INTEGER	:=5;	--speed of the asteroid
@@ -52,10 +57,13 @@ ENTITY hw_image_generator IS
 		MAX_COUNT : natural := 25000000);	--50000000
 
 	PORT(
+		--Downloaded code
 		disp_ena		:	IN		STD_LOGIC;	--display enable ('1' = display time, '0' = blanking time)
 		column		:	IN		INTEGER;		--column pixel coordinate
 		row			:	IN		INTEGER;		--row pixel coordinate
-		clk_control	:	IN		STD_LOGIC;		--row pixel coordinate
+		--
+
+		clk_control	:	IN		STD_LOGIC;		--input pixel clock
 		reset_switch	:	IN		STD_LOGIC;
 		shoot			:	IN		STD_LOGIC;	--input from key_4
 		key_right	:	IN		STD_LOGIC;	--input from key_0
@@ -64,9 +72,12 @@ ENTITY hw_image_generator IS
 		key_left		:	IN		STD_LOGIC;	--input from key_3
 		clk2		 	:  IN		std_logic;
 		
+		--Downloaded code
 		red			:	OUT	STD_LOGIC_VECTOR(7 DOWNTO 0) := (OTHERS => '0');  --red magnitude output to DAC
 		green			:	OUT	STD_LOGIC_VECTOR(7 DOWNTO 0) := (OTHERS => '0');  --green magnitude output to DAC
 		blue			:	OUT	STD_LOGIC_VECTOR(7 DOWNTO 0) := (OTHERS => '0')); --blue magnitude output to DAC
+		--
+
 END hw_image_generator;
 
 ARCHITECTURE behavior OF hw_image_generator IS
@@ -74,23 +85,29 @@ ARCHITECTURE behavior OF hw_image_generator IS
 		SIGNAL go_left		:	std_logic;
 		SIGNAL go_up		:	std_logic;
 		SIGNAL go_down		:	std_logic;
+
 		SIGNAL fire			:	std_logic;	--'1' when the bullet is fired
-		SIGNAL visible1	:	std_logic;
-		SIGNAL visible2	:	std_logic;
-		SIGNAL bul_en1		:	std_logic;
-		SIGNAL bul_en2		:	std_logic;
-		SIGNAL life1		:	integer;
-		SIGNAL life2		:	integer;
-		signal ship_x		:	integer range 0 to 868;
-		signal ship_y		:	integer range 0 to 512;
-		SIGNAL bul_x1		:	integer range 0 to 868;
-		SIGNAL bul_y1		:	integer range 0 to 512;
-		SIGNAL bul_x2		:	integer range 0 to 868;
-		SIGNAL bul_y2		:	integer range 0 to 512;
-		SIGNAL bul_speed_x1		: integer;
-		SIGNAL bul_speed_y1		: integer;
-		SIGNAL bul_speed_x2		: integer;
-		SIGNAL bul_speed_y2		: integer;
+
+		SIGNAL visible1	:	std_logic;	--'1' when bullet 1 is visible
+		SIGNAL visible2	:	std_logic;	--'1' when bullet 2 is visible
+
+		SIGNAL life1		:	integer;	--decay life of bullet 1
+		SIGNAL life2		:	integer;	--decay life of bullet 2
+
+		signal ship_x		:	integer range 0 to 868;	--ship x coordinate
+		signal ship_y		:	integer range 0 to 512;	--ship y coordinate
+
+		SIGNAL bul_x1		:	integer range 0 to 868;	--bullet1 x coordinate
+		SIGNAL bul_y1		:	integer range 0 to 512;	--bullet1 y coordinate
+		SIGNAL bul_x2		:	integer range 0 to 868;	--bullet2 x coordinate
+		SIGNAL bul_y2		:	integer range 0 to 512;	--bullet2 y coordinate
+
+		SIGNAL bul_speed_x1		: integer;	--bullet1 x speed
+		SIGNAL bul_speed_y1		: integer;	--bullet1 y speed
+		SIGNAL bul_speed_x2		: integer;	--bullet2 x speed
+		SIGNAL bul_speed_y2		: integer;	--bullet2 y speed
+
+		--asteroid coordinates
 		SIGNAL ast_x1		: integer range 0 to 868 :=0;
 		SIGNAL ast_y1		: integer range 0 to 512 :=0;
 		SIGNAL ast_x2		: integer range 0 to 868 :=600;
@@ -101,13 +118,16 @@ ARCHITECTURE behavior OF hw_image_generator IS
 		SIGNAL ast_y4		: integer range 0 to 512 :=2;
 		SIGNAL ast_x5		: integer range 0 to 868 :=67;
 		SIGNAL ast_y5		: integer range 0 to 512 :=207;
+
 		SIGNAL hit_1		:	std_logic;	--equals '1' if ast_1 is destroyed
 		SIGNAL hit_2		:	std_logic;	--equals '1' if ast_2 is destroyed
 		SIGNAL hit_3		:	std_logic;	--equals '1' if ast_3 is destroyed
 		SIGNAL hit_4		:	std_logic;	--equals '1' if ast_4 is destroyed
 		SIGNAL hit_5		:	std_logic;	--equals '1' if ast_5 is destroyed
+
 		SIGNAL dir			: natural;	--direction the ship is facing from 0 to 7
 		SIGNAL reset		:	std_logic;	--equals '1' if the ship is hit or player resets game
+
 		SIGNAL delay		: integer;	--timer to reset game after collision
 		SIGNAL delay_1		: integer;	--timer to reset asteroid 1 after hit by bullet
 		SIGNAL delay_2		: integer;	--timer to reset asteroid 2 after hit by bullet
@@ -115,6 +135,7 @@ ARCHITECTURE behavior OF hw_image_generator IS
 		SIGNAL delay_4		: integer;	--timer to reset asteroid 4 after hit by bullet
 		SIGNAL delay_5		: integer;	--timer to reset asteroid 5 after hit by bullet
 		SIGNAL score		: integer;	--game score, +1 for every asteroid hit
+
 		SIGNAL high_score		: integer;	--high score
 		SIGNAL rand_1		: integer;	--random counter
 		SIGNAL rand_2		: integer;	--random counter
@@ -126,6 +147,7 @@ BEGIN
 	
 	BEGIN
 
+	--Global clock control
 	IF (clk_control'EVENT AND clk_control = '1') then
 		timer:=timer+1;
 	
@@ -151,7 +173,7 @@ BEGIN
 		fire<='1';
 	END IF;
 	
-		--Asteroid movement
+	--Asteroid movement
 	IF(timer=1) THEN
 				ast_x1<=ast_x1+2*ast_speed;		
 				ast_y1<=ast_y1+ast_speed+rand_2;
@@ -214,7 +236,7 @@ BEGIN
 	END IF;
 	
 
-	--Detects if bullet hits asteroid 1
+	--Detects if bullets hit asteroid 1
 	IF((bul_x1-ast_x1)*(bul_x1-ast_x1)+(bul_y1-ast_y1)*(bul_y1-ast_y1)<30*30 AND hit_1='0' AND visible1='1') THEN
 		hit_1<='1';
 		delay_1<=0;
@@ -234,7 +256,7 @@ BEGIN
 	END IF;
 
 
-	--Detects if bullet hits asteroid 2
+	--Detects if bullets hit asteroid 2
 	IF((bul_x1-ast_x2)*(bul_x1-ast_x2)+(bul_y1-ast_y2)*(bul_y1-ast_y2)<30*30 AND hit_2='0' AND visible1='1') THEN
 		hit_2<='1';
 		delay_2<=0;
@@ -253,7 +275,7 @@ BEGIN
 	END IF;
 
 
-	--Detects if bullet hits asteroid 3
+	--Detects if bullets hit asteroid 3
 	IF((bul_x1-ast_x3)*(bul_x1-ast_x3)+(bul_y1-ast_y3)*(bul_y1-ast_y3)<30*30 AND hit_3='0' AND visible1='1') THEN
 		hit_3<='1';
 		delay_3<=0;
@@ -271,7 +293,7 @@ BEGIN
 		END IF;
 	END IF;
 
-		--Detects if bullet hits asteroid 4
+		--Detects if bullets hit asteroid 4
 	IF((bul_x1-ast_x4)*(bul_x1-ast_x4)+(bul_y1-ast_y4)*(bul_y1-ast_y4)<30*30 AND hit_4='0' AND visible1='1') THEN
 		hit_4<='1';
 		delay_4<=0;
@@ -289,7 +311,7 @@ BEGIN
 		END IF;
 	END IF;
 	
-		--Detects if bullet hits asteroid 5
+		--Detects if bullets hit asteroid 5
 	IF((bul_x1-ast_x5)*(bul_x1-ast_x5)+(bul_y1-ast_y5)*(bul_y1-ast_y5)<30*30 AND hit_5='0' AND visible1='1') THEN
 		hit_5<='1';
 		delay_5<=0;
@@ -356,6 +378,8 @@ BEGIN
 	
 	--Bullet firing
 	IF(fire='1') THEN
+
+		--bullet 1 creation
 		IF(visible1='0') THEN
 			visible1<='1';	--sets the bullet to be visible
 			life1<=0;
@@ -390,6 +414,7 @@ BEGIN
 			end case;
 		END IF;
 
+		--bullet 2 creation
 		IF(visible2='0' AND visible1='1'AND life1>5) THEN
 			
 			visible2<='1';
@@ -428,6 +453,7 @@ BEGIN
 	END IF;
 --	fire<='0';
 	
+	--bullet 1 movement
 	IF(visible1='1') THEN
 		IF(timer=1) THEN
 			life1<=life1+1;
@@ -442,6 +468,7 @@ BEGIN
 		
 	END IF;
 		
+	--bullet 2 movement
 	IF(visible2='1') THEN
 		IF(timer=1) THEN
 			life2<=life2+1;
@@ -457,7 +484,11 @@ BEGIN
 	END IF;
 	
 	--screen display
+
+		--Downloaded code
 		IF(disp_ena = '1') THEN		--display time
+		--
+
 			--sets screen red during collision
 			IF(reset='1') THEN
 				red <= (OTHERS => '1');
@@ -586,14 +617,14 @@ BEGIN
 				END IF;
 			END IF;
 			
-			
+		--Downloaded code
 		ELSE								--blanking time
 			red <= (OTHERS => '0');
 			green <= (OTHERS => '0');
 			blue <= (OTHERS => '0');
 		END IF;
-	
 	END IF;
-	
+	--	
+
 	END PROCESS;
 END behavior;
