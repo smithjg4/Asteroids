@@ -1,0 +1,22 @@
+
+State Machine - |vga_with_hw_test_image|io_ps2_keyboard:inst5|masterState
+Name masterState.stateWaitAckED2 masterState.stateWaitAckED1 masterState.stateWaitScanCode masterState.stateResetAck masterState.stateReset2 masterState.stateInit masterState.stateInitAA masterState.stateReset 
+masterState.stateReset 0 0 0 0 0 0 0 0 
+masterState.stateInitAA 0 0 0 0 0 0 1 1 
+masterState.stateInit 0 0 0 0 0 1 0 1 
+masterState.stateReset2 0 0 0 0 1 0 0 1 
+masterState.stateResetAck 0 0 0 1 0 0 0 1 
+masterState.stateWaitScanCode 0 0 1 0 0 0 0 1 
+masterState.stateWaitAckED1 0 1 0 0 0 0 0 1 
+masterState.stateWaitAckED2 1 0 0 0 0 0 0 1 
+
+State Machine - |vga_with_hw_test_image|io_ps2_keyboard:inst5|io_ps2_com:myPs2Com|comState
+Name comState.stateWaitHighRecv comState.stateRecvBit comState.stateWaitAck comState.stateClockAndDataLow comState.stateWaitClockHigh comState.stateWaitClockLow comState.stateWait100 comState.stateIdle 
+comState.stateIdle 0 0 0 0 0 0 0 0 
+comState.stateWait100 0 0 0 0 0 0 1 1 
+comState.stateWaitClockLow 0 0 0 0 0 1 0 1 
+comState.stateWaitClockHigh 0 0 0 0 1 0 0 1 
+comState.stateClockAndDataLow 0 0 0 1 0 0 0 1 
+comState.stateWaitAck 0 0 1 0 0 0 0 1 
+comState.stateRecvBit 0 1 0 0 0 0 0 1 
+comState.stateWaitHighRecv 1 0 0 0 0 0 0 1 
